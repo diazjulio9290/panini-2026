@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0c0e16" />
+  <title>Panini World Cup 2026 — Sticker Tracker</title>
+  <meta name="description" content="Track my Panini FIFA World Cup 2026 sticker collection — missing stickers and duplicates for trade." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>" />
+</head>
+<body>
+  <!-- top bar -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="logo">⚽</span>
+        <span class="titles">
+          <span id="brandName">World Cup 2026</span>
+          <small>Panini Sticker Tracker</small>
+        </span>
+      </div>
+      <span class="spacer"></span>
+      <span id="ownerPill" class="owner-pill">👁 Viewing</span>
+      <button id="authBtn" class="btn small">Owner login</button>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </header>
+
+  <main class="wrap" id="view"><!-- rendered by app.js --></main>
+
+  <!-- login modal -->
+  <div class="modal-back" id="loginModal">
+    <div class="modal">
+      <h3>Owner login</h3>
+      <p>Only the album owner can edit. Enter your password.</p>
+      <div class="field">
+        <label for="pw">Password</label>
+        <input type="password" id="pw" placeholder="Your owner password" autocomplete="current-password" />
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="loginCancel">Cancel</button>
+        <button class="btn primary" id="loginGo">Log in</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="catalog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
