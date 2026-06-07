@@ -8,6 +8,7 @@ const state = {
   displayName: 'My',
   owner: false,
   loaded: false,
+  teamQuery: '',      // live search text for filtering the team cards
 };
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -142,6 +143,48 @@ function progress(pct, cls = '') {
   return `<div class="progress ${cls}"><span style="width:${Math.min(100, pct)}%"></span></div>`;
 }
 
+// ---- team search / filter ----
+function teamSearchBar() {
+  const q = esc(state.teamQuery || '');
+  return `
+    <div class="team-search">
+      <span class="ts-icon">🔍</span>
+      <input id="teamSearch" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Search a team by name or code — e.g. Brazil, BRA, Japan…" value="${q}" />
+      <button class="ts-clear ${q ? '' : 'hidden'}" id="teamSearchClear" aria-label="Clear search" title="Clear">✕</button>
+    </div>`;
+}
+
+// Wrap a list of team cards in a searchable grid + "no results" message.
+function teamsBlock(teams, headLabel) {
+  return `
+    <div class="section-head">${headLabel}</div>
+    ${teamSearchBar()}
+    <div class="card-grid" id="teamGrid">${teams.map(sectionCard).join('')}</div>
+    <div class="empty hidden" id="teamSearchEmpty">
+      <div class="big">🔍</div><b>No teams match that</b>
+      <div>Try a different name or 3-letter code.</div>
+    </div>`;
+}
+
+// Show/hide team cards based on the current query (no re-render, keeps focus).
+function applyTeamFilter() {
+  const q = (state.teamQuery || '').trim().toLowerCase();
+  const grid = document.getElementById('teamGrid');
+  if (!grid) return;
+  let shown = 0;
+  grid.querySelectorAll('.team-card').forEach((card) => {
+    const hay = card.getAttribute('data-search') || '';
+    const match = !q || hay.indexOf(q) !== -1;
+    card.classList.toggle('hidden', !match);
+    if (match) shown++;
+  });
+  const empty = document.getElementById('teamSearchEmpty');
+  if (empty) empty.classList.toggle('hidden', shown > 0);
+  const clear = document.getElementById('teamSearchClear');
+  if (clear) clear.classList.toggle('hidden', !q);
+}
+
 // Real flag image for teams (renders everywhere); emoji for special sections.
 function flagSrc(iso) { return `https://flagcdn.com/w80/${iso}.png`; }
 function iconFor(section, inline = false) {
@@ -193,9 +236,9 @@ function renderDashboard() {
     ${overall}
     <div class="section-head">Special sections</div>
     ${cardsHtml(specials)}
-    <div class="section-head">National teams (48)</div>
-    ${cardsHtml(teams)}
+    ${teamsBlock(teams, 'National teams (48)')}
   `;
+  applyTeamFilter();
 }
 
 function sectionCard(section) {
@@ -214,7 +257,7 @@ function sectionCard(section) {
   if (st.dupSpares > 0) foot.push(`<span class="badge dup">${st.dupSpares} to trade</span>`);
 
   return `
-    <div class="${classes.join(' ')}" data-team="${section.id}">
+    <div class="${classes.join(' ')}" data-team="${section.id}" data-search="${esc((section.name + ' ' + section.id).toLowerCase())}">
       ${ph}
       <div class="tc-top">
         <span class="tc-emoji">${iconFor(section)}</span>
@@ -239,9 +282,9 @@ function renderCatalog() {
     <div class="page-title">📒 The Album <span class="sub">${TOTAL_STICKERS} stickers • ${teams.length} teams</span></div>
     <div class="section-head">Special sections</div>
     ${cardsHtml(specials)}
-    <div class="section-head">National teams</div>
-    ${cardsHtml(teams)}
+    ${teamsBlock(teams, 'National teams')}
   `;
+  applyTeamFilter();
 }
 
 // ---------- Sticker grid for one section ----------
@@ -515,6 +558,13 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'importBtn') return importCollection($('#importFile').files[0]);
   if (e.target.id === 'saveName') return saveName();
   if (e.target.id === 'resetBtn') return doReset();
+  if (e.target.id === 'teamSearchClear') {
+    state.teamQuery = '';
+    const inp = $('#teamSearch');
+    if (inp) { inp.value = ''; inp.focus(); }
+    applyTeamFilter();
+    return;
+  }
   if (e.target === $('#loginModal')) return closeLogin();
 
   if (!t) return;
@@ -525,9 +575,22 @@ document.addEventListener('click', (e) => {
   if (t.dataset.tile) return setQty(t.dataset.tile, qty(t.dataset.tile) + 1); // tap tile = +1
 });
 
+// live team search (typing filters cards without re-rendering, so focus stays)
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'teamSearch') {
+    state.teamQuery = e.target.value;
+    applyTeamFilter();
+  }
+});
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && $('#loginModal').classList.contains('show')) doLogin();
-  if (e.key === 'Escape') closeLogin();
+  if (e.key === 'Escape') {
+    if ($('#loginModal').classList.contains('show')) { closeLogin(); return; }
+    if (e.target.id === 'teamSearch' && state.teamQuery) {
+      state.teamQuery = ''; e.target.value = ''; applyTeamFilter();
+    }
+  }
 });
 
 async function saveName() {

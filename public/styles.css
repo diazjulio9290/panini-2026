@@ -252,6 +252,27 @@ h1, h2, h3, .display { font-family: 'Outfit', 'Sora', sans-serif; }
 }
 .section-head::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-strong), transparent); }
 
+/* ---------- team search bar ---------- */
+.team-search {
+  position: relative; display: flex; align-items: center; margin: 0 2px 14px;
+}
+.team-search .ts-icon {
+  position: absolute; left: 16px; font-size: 16px; opacity: .7; pointer-events: none;
+}
+.team-search input {
+  width: 100%; min-width: 0; font-family: 'Sora';
+  padding: 13px 44px 13px 44px; font-size: 14.5px; border-radius: 14px;
+  background: rgba(0,0,0,.4); border: 1px solid var(--line-strong); color: var(--text);
+}
+.team-search input::placeholder { color: var(--faint); }
+.team-search input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(164,53,255,.16); }
+.team-search .ts-clear {
+  position: absolute; right: 9px; width: 30px; height: 30px; display: grid; place-items: center;
+  border-radius: 9px; border: 1px solid var(--line); background: rgba(255,255,255,.05);
+  color: var(--muted); font-size: 14px; font-weight: 800; cursor: pointer;
+}
+.team-search .ts-clear:hover { color: var(--text); border-color: var(--need-line); }
+
 /* ---------- section / team cards ---------- */
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr)); gap: 13px; }
 .team-card {
