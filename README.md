@@ -123,6 +123,16 @@ stores quantities by code (e.g. `ARG04 = 1`). After editing, re‑upload to GitH
 - **Back up regularly:** the **Import / Export** page has a "Download JSON backup" button.
 - Free Render services may "sleep" when idle and take ~30 seconds to wake on the first
   visit. That's normal on the free tier.
+- **Optional — keep it awake for free:** sign up at https://uptimerobot.com (free) and add
+  a monitor that pings `https://YOUR-APP.onrender.com/healthz` every 10 minutes. The app
+  has a built-in `/healthz` endpoint just for this — pings don't touch the database.
+
+## 📦 Pack Mode
+
+When you open a real pack of stickers, tap the floating **📦** button (owner only),
+then type or paste the codes — `ARG04, BRA11 MEX03` — and press Enter. Each one is
+saved instantly and the log tells you if it's NEW or a duplicate for trading.
+Complete a team and you get a confetti celebration. 🎉
 
 ---
 

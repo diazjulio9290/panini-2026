@@ -9,6 +9,7 @@ const state = {
   owner: false,
   loaded: false,
   teamQuery: '',      // live search text for filtering the team cards
+  teamSort: 'default', // 'default' | 'closest' | 'missing'
 };
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -17,6 +18,14 @@ const view = $('#view');
 // ---------- tiny helpers ----------
 function qty(code) {
   return state.collection[code] || 0;
+}
+const STICKER_BY_CODE = Object.fromEntries(ALL_STICKERS.map((s) => [s.code, s]));
+function sectionOfCode(code) {
+  const s = STICKER_BY_CODE[code];
+  return s ? SECTION_BY_ID[s.sectionId] : null;
+}
+function isSectionComplete(sec) {
+  return !!sec && sec.stickers.every((s) => qty(s.code) >= 1);
 }
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -79,14 +88,51 @@ async function setQty(code, newQ) {
   newQ = Math.max(0, newQ);
   const prev = qty(code);
   if (newQ === prev) return;
+  const sec = sectionOfCode(code);
+  const wasComplete = isSectionComplete(sec);
   if (newQ === 0) delete state.collection[code]; else state.collection[code] = newQ;
-  rerenderCurrent();
+  updateAfterQtyChange(code);
+  if (sec && !wasComplete && newQ > prev && isSectionComplete(sec)) celebrate(sec);
   try {
     await api('/api/sticker', { method: 'PUT', body: JSON.stringify({ code, quantity: newQ }) });
   } catch (e) {
     if (prev === 0) delete state.collection[code]; else state.collection[code] = prev;
-    rerenderCurrent();
+    updateAfterQtyChange(code);
     toast(e.message, 'err');
+  }
+}
+
+// Update only what changed: if the sticker's tile is on screen (team grid page),
+// swap that one tile + refresh the grid header. Otherwise re-render the page.
+// This keeps taps instant and flicker-free on phones.
+function updateAfterQtyChange(code) {
+  const stk = STICKER_BY_CODE[code];
+  const tile = stk && document.querySelector(`.sticker[data-code="${code}"]`);
+  if (tile) {
+    tile.outerHTML = stickerTile(stk);
+    const head = document.getElementById('gridHead');
+    if (head) head.innerHTML = gridHeadHtml(SECTION_BY_ID[stk.sectionId]);
+  } else {
+    rerenderCurrent();
+  }
+}
+
+// 🎉 Confetti burst + toast when a team/section is completed.
+function celebrate(section) {
+  toast(`🏆 ${section.name} COMPLETE!`, 'ok');
+  const colors = ['#ff2e7e', '#a435ff', '#2f7bff', '#00d6c4', '#b6ff3d', '#ffd45e'];
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti';
+    const size = 6 + Math.random() * 8;
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.width = size + 'px';
+    p.style.height = size * 0.45 + 'px';
+    p.style.background = colors[i % colors.length];
+    p.style.animation = `confetti-fall ${1.8 + Math.random() * 1.6}s linear forwards`;
+    p.style.animationDelay = Math.random() * 0.4 + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 4200);
   }
 }
 
@@ -155,12 +201,33 @@ function teamSearchBar() {
     </div>`;
 }
 
-// Wrap a list of team cards in a searchable grid + "no results" message.
+// Sort options for the team grid. 'closest' puts nearly-finished teams first
+// (the fun ones to hunt), completed teams last.
+function sortedTeams(teams) {
+  if (state.teamSort === 'closest') {
+    const key = (s) => { const st = sectionStats(s); return st.done ? 1000 : st.missing; };
+    return [...teams].sort((a, b) => key(a) - key(b));
+  }
+  if (state.teamSort === 'missing') {
+    return [...teams].sort((a, b) => sectionStats(b).missing - sectionStats(a).missing);
+  }
+  return teams;
+}
+
+// Wrap a list of team cards in a searchable, sortable grid + "no results" message.
 function teamsBlock(teams, headLabel) {
+  const sorts = [
+    ['default', 'A–Z'],
+    ['closest', '🔥 Closest to done'],
+    ['missing', '🧩 Most missing'],
+  ];
+  const chips = sorts.map(([id, label]) =>
+    `<button class="sort-chip ${state.teamSort === id ? 'active' : ''}" data-sort="${id}">${label}</button>`).join('');
   return `
     <div class="section-head">${headLabel}</div>
     ${teamSearchBar()}
-    <div class="card-grid" id="teamGrid">${teams.map(sectionCard).join('')}</div>
+    <div class="sort-row"><span class="sort-label">Sort:</span>${chips}</div>
+    <div class="card-grid" id="teamGrid">${sortedTeams(teams).map(sectionCard).join('')}</div>
     <div class="empty hidden" id="teamSearchEmpty">
       <div class="big">🔍</div><b>No teams match that</b>
       <div>Try a different name or 3-letter code.</div>
@@ -183,6 +250,19 @@ function applyTeamFilter() {
   if (empty) empty.classList.toggle('hidden', shown > 0);
   const clear = document.getElementById('teamSearchClear');
   if (clear) clear.classList.toggle('hidden', !q);
+}
+
+// "🔥 Almost there" — the 3 in-progress sections closest to completion.
+// Gives the collector a clear next target. Hidden until there's progress.
+function huntBanner() {
+  const close = SECTIONS
+    .map((s) => ({ s, st: sectionStats(s) }))
+    .filter((x) => x.st.have > 0 && !x.st.done)
+    .sort((a, b) => a.st.missing - b.st.missing)
+    .slice(0, 3);
+  if (!close.length) return '';
+  return `<div class="hunt"><span class="hunt-title">🔥 Almost there:</span>${close.map((x) =>
+    `<button class="hunt-chip" data-team="${x.s.id}">${esc(x.s.short || x.s.name)} — ${x.st.missing} left</button>`).join('')}</div>`;
 }
 
 // Real flag image for teams (renders everywhere); emoji for special sections.
@@ -234,6 +314,7 @@ function renderDashboard() {
     <div class="page-title">📊 ${state.owner ? 'Your dashboard' : esc(state.displayName) + "'s dashboard"} <span class="sub">tap any card to open the stickers</span></div>
     ${stats}
     ${overall}
+    ${huntBanner()}
     <div class="section-head">Special sections</div>
     ${cardsHtml(specials)}
     ${teamsBlock(teams, 'National teams (48)')}
@@ -252,7 +333,7 @@ function sectionCard(section) {
     ? `<span class="badge ph">Placeholder</span>` : '';
 
   const foot = [];
-  if (st.done) foot.push(`<span class="badge done">✓ Complete</span>`);
+  if (st.done) foot.push(`<span class="badge done">🏆 Complete</span>`);
   else foot.push(`<span class="badge need">${st.missing} missing</span>`);
   if (st.dupSpares > 0) foot.push(`<span class="badge dup">${st.dupSpares} to trade</span>`);
 
@@ -288,10 +369,19 @@ function renderCatalog() {
 }
 
 // ---------- Sticker grid for one section ----------
+function gridHeadHtml(section) {
+  const st = sectionStats(section);
+  return `
+    <div class="overall" style="margin-bottom:14px">
+      <div class="top"><b>${st.have} / ${st.total} collected</b>
+        <span>${st.missing} missing${st.dupSpares ? ' • ' + st.dupSpares + ' to trade' : ''}</span></div>
+      ${progress(Math.round((st.have / st.total) * 100), st.done ? 'green' : '')}
+    </div>`;
+}
+
 function renderGrid(sectionId) {
   const section = SECTION_BY_ID[sectionId];
   if (!section) { go('dashboard'); return; }
-  const st = sectionStats(section);
   const ph = section.kind === 'team' && !section.confirmed
     ? `<span class="badge ph" style="position:static">Placeholder team</span>` : '';
 
@@ -302,11 +392,7 @@ function renderGrid(sectionId) {
       <button class="btn ghost small" data-go="dashboard">← Back</button>
       <div class="page-title" style="margin:0">${iconFor(section, true)} ${esc(section.name)} ${ph}</div>
     </div>
-    <div class="overall" style="margin-bottom:14px">
-      <div class="top"><b>${st.have} / ${st.total} collected</b>
-        <span>${st.missing} missing${st.dupSpares ? ' • ' + st.dupSpares + ' to trade' : ''}</span></div>
-      ${progress(Math.round((st.have / st.total) * 100), st.done ? 'green' : '')}
-    </div>
+    <div id="gridHead">${gridHeadHtml(section)}</div>
     ${state.owner ? '' : '<div class="public-banner" style="margin-bottom:14px">👁 Read-only view. Only the owner can change quantities.</div>'}
     <div class="sticker-grid">${tiles}</div>
   `;
@@ -337,7 +423,7 @@ function stickerTile(stk) {
   }
 
   return `
-    <div class="${cls}" ${state.owner ? `data-tile="${stk.code}"` : ''}>
+    <div class="${cls}" data-code="${stk.code}" ${state.owner ? `data-tile="${stk.code}"` : ''}>
       ${dupBadge}
       <div class="code">${stk.code}</div>
       <div class="type">${stk.type}</div>
@@ -506,6 +592,45 @@ async function importCollection(file) {
   }
 }
 
+// ---------- 📦 Pack Mode (owner): rapid-fire entry when opening real packs ----------
+let packAdded = 0;
+function openPack() {
+  packAdded = 0;
+  $('#packLog').innerHTML = '';
+  $('#packCount').textContent = '';
+  $('#packInput').value = '';
+  $('#packModal').classList.add('show');
+  setTimeout(() => $('#packInput').focus(), 50);
+}
+function closePack() {
+  $('#packModal').classList.remove('show');
+  rerenderCurrent(); // refresh stats behind the modal
+}
+function packSubmit() {
+  const raw = $('#packInput').value;
+  const codes = raw.toUpperCase().split(/[\s,;]+/).filter(Boolean);
+  if (!codes.length) return;
+  for (const c of codes) packAddOne(c);
+  $('#packInput').value = '';
+}
+function packAddOne(code) {
+  const log = $('#packLog');
+  const stk = STICKER_BY_CODE[code];
+  if (!stk) {
+    log.insertAdjacentHTML('afterbegin',
+      `<div class="pl-row bad">✕ <b>${esc(code)}</b> — not a valid code</div>`);
+    return;
+  }
+  const newQ = qty(code) + 1;
+  setQty(code, newQ);
+  packAdded++;
+  const sec = SECTION_BY_ID[stk.sectionId];
+  const label = newQ === 1 ? 'NEW — added to album! ✨' : `duplicate ×${newQ} — for trading`;
+  log.insertAdjacentHTML('afterbegin',
+    `<div class="pl-row ${newQ === 1 ? 'new' : 'dup'}"><b>${code}</b> <span>${esc(sec ? sec.name : '')}</span> — ${label}</div>`);
+  $('#packCount').textContent = `${packAdded} sticker${packAdded === 1 ? '' : 's'} added`;
+}
+
 // ---------- auth ----------
 function openLogin() { $('#loginModal').classList.add('show'); $('#pw').value = ''; setTimeout(() => $('#pw').focus(), 50); }
 function closeLogin() { $('#loginModal').classList.remove('show'); }
@@ -533,6 +658,8 @@ async function doLogout() {
 function updateOwnerUI() {
   const pill = $('#ownerPill');
   const btn = $('#authBtn');
+  const fab = $('#packFab');
+  if (fab) fab.classList.toggle('hidden', !state.owner);
   $('#brandName').textContent = state.owner ? 'World Cup 2026' : esc(state.displayName) + "'s 2026";
   if (state.owner) {
     pill.textContent = '✏️ Owner';
@@ -547,9 +674,12 @@ function updateOwnerUI() {
 
 // ---------- global event handling (delegation) ----------
 document.addEventListener('click', (e) => {
-  const t = e.target.closest('[data-go],[data-team],[data-inc],[data-dec],[data-tile]');
+  const t = e.target.closest('[data-go],[data-team],[data-inc],[data-dec],[data-tile],[data-sort]');
   // top bar buttons
   if (e.target.id === 'authBtn') { state.owner ? doLogout() : openLogin(); return; }
+  if (e.target.id === 'packFab') return openPack();
+  if (e.target.id === 'packDone') return closePack();
+  if (e.target === $('#packModal')) return closePack();
   if (e.target.id === 'loginGo') return doLogin();
   if (e.target.id === 'loginCancel') return closeLogin();
   if (e.target.id === 'copyMissing') return copyText(buildMissingText());
@@ -568,6 +698,7 @@ document.addEventListener('click', (e) => {
   if (e.target === $('#loginModal')) return closeLogin();
 
   if (!t) return;
+  if (t.dataset.sort) { state.teamSort = t.dataset.sort; rerenderCurrent(); return; }
   if (t.dataset.go) return go(t.dataset.go);
   if (t.dataset.team) return go('team/' + t.dataset.team);
   if (t.dataset.inc) return setQty(t.dataset.inc, qty(t.dataset.inc) + 1);
@@ -585,7 +716,9 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && $('#loginModal').classList.contains('show')) doLogin();
+  if (e.key === 'Enter' && e.target.id === 'packInput') { e.preventDefault(); packSubmit(); }
   if (e.key === 'Escape') {
+    if ($('#packModal').classList.contains('show')) { closePack(); return; }
     if ($('#loginModal').classList.contains('show')) { closeLogin(); return; }
     if (e.target.id === 'teamSearch' && state.teamQuery) {
       state.teamQuery = ''; e.target.value = ''; applyTeamFilter();

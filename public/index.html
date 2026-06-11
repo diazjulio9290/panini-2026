@@ -45,6 +45,24 @@
     </div>
   </div>
 
+  <!-- pack mode: floating button (owner only) + quick-entry modal -->
+  <button id="packFab" class="pack-fab hidden" title="Pack Mode — quick add stickers" aria-label="Pack Mode">📦</button>
+  <div class="modal-back" id="packModal">
+    <div class="modal">
+      <h3>📦 Pack Mode</h3>
+      <p>Opening packs? Type a code and press <b>Enter</b> — added instantly.
+         You can also paste several at once: <b>ARG04, BRA11 MEX03</b></p>
+      <div class="field">
+        <input type="text" id="packInput" placeholder="e.g. ARG04" autocomplete="off" spellcheck="false" autocapitalize="characters" />
+      </div>
+      <div class="pack-log" id="packLog"></div>
+      <div class="actions">
+        <span class="pack-count" id="packCount"></span>
+        <button class="btn primary" id="packDone">Done</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script src="catalog.js"></script>

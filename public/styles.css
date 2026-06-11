@@ -289,7 +289,11 @@ h1, h2, h3, .display { font-family: 'Outfit', 'Sora', sans-serif; }
 .team-card:hover { transform: translateY(-3px); border-color: var(--purple); box-shadow: 0 0 0 1px rgba(164,53,255,.3), 0 24px 48px rgba(0,0,0,.5); }
 .team-card.special { border-color: rgba(255, 212, 94, .5); box-shadow: 0 0 0 1px rgba(255,212,94,.22), var(--glow); }
 .team-card.special:hover { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(255,212,94,.45), 0 22px 46px rgba(0,0,0,.5); }
-.team-card.done { border-color: var(--have-line); box-shadow: 0 0 0 1px rgba(43,214,115,.25), var(--glow); }
+.team-card.done {
+  border-color: rgba(255, 212, 94, .6);
+  background: linear-gradient(180deg, rgba(255,212,94,.10), var(--card));
+  box-shadow: 0 0 0 1px rgba(255,212,94,.3), 0 0 24px rgba(255,212,94,.14), var(--glow);
+}
 .team-card .tc-top { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
 .team-card .tc-emoji {
   font-size: 26px; width: 46px; height: 46px; display: grid; place-items: center;
@@ -442,6 +446,55 @@ input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px 
 .modal p { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
 .modal .field { margin-bottom: 16px; }
 .modal .actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ---------- pack mode ---------- */
+.pack-fab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 55;
+  width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--wc); font-size: 24px; display: grid; place-items: center;
+  box-shadow: 0 12px 30px rgba(164,53,255,.55);
+  transition: transform .12s ease;
+}
+.pack-fab:hover { transform: scale(1.08); }
+.pack-fab:active { transform: scale(.97); }
+.pack-log { max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.pl-row {
+  font-size: 12.5px; padding: 8px 11px; border-radius: 9px;
+  background: rgba(0,0,0,.3); border: 1px solid var(--line); color: var(--muted);
+}
+.pl-row b { color: var(--text); }
+.pl-row.new { border-color: var(--have-line); color: var(--have); }
+.pl-row.dup { border-color: var(--dup-line); color: #9ad8ff; }
+.pl-row.bad { border-color: var(--need-line); color: #ff9aab; }
+.pack-count { margin-right: auto; align-self: center; font-size: 12px; color: var(--muted); font-weight: 700; }
+
+/* ---------- sort chips ---------- */
+.sort-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin: 0 2px 14px; }
+.sort-label { font-size: 12px; color: var(--faint); font-weight: 800; }
+.sort-chip {
+  cursor: pointer; font-family: 'Sora'; font-size: 12px; font-weight: 800;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--muted);
+  transition: color .15s, border-color .15s;
+}
+.sort-chip:hover { color: var(--text); border-color: var(--line-strong); }
+.sort-chip.active { background: var(--wc); color: #0a0a16; border-color: transparent; }
+
+/* ---------- hunt banner ---------- */
+.hunt { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: -8px 0 20px; }
+.hunt-title { font-family: 'Outfit'; font-weight: 800; font-size: 13px; color: var(--gold); }
+.hunt-chip {
+  cursor: pointer; font-family: 'Sora'; font-size: 12px; font-weight: 800;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,212,94,.4); background: rgba(255,212,94,.08); color: #ffe49a;
+}
+.hunt-chip:hover { background: rgba(255,212,94,.18); }
+
+/* ---------- confetti + progress shimmer ---------- */
+.confetti { position: fixed; top: -14px; z-index: 100; border-radius: 2px; pointer-events: none; }
+@keyframes confetti-fall { to { transform: translateY(108vh) rotate(900deg); } }
+@keyframes prog-sheen { from { background-position: 0% 0; } to { background-position: -200% 0; } }
+.progress > span { animation: prog-sheen 5s linear infinite; }
 
 .hidden { display: none !important; }
 

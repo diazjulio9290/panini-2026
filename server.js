@@ -146,6 +146,12 @@ app.post('/api/settings', requireOwner, async (req, res) => {
   }
 });
 
+// Health check — used by free uptime pingers (UptimeRobot, cron-job.org) to keep
+// the Render free instance awake. No database hit, so pings are cheap.
+app.get('/healthz', (req, res) => {
+  res.json({ ok: true });
+});
+
 // ---- static frontend ----
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('*', (req, res) => {
