@@ -256,12 +256,9 @@ h1, h2, h3, .display { font-family: 'Outfit', 'Sora', sans-serif; }
 .team-search {
   position: relative; display: flex; align-items: center; margin: 0 2px 14px;
 }
-.team-search .ts-icon {
-  position: absolute; left: 16px; font-size: 16px; opacity: .7; pointer-events: none;
-}
-.team-search input {
+.team-search input[type="text"] {
   width: 100%; min-width: 0; font-family: 'Sora';
-  padding: 13px 44px 13px 44px; font-size: 14.5px; border-radius: 14px;
+  padding: 13px 44px 13px 16px; font-size: 14.5px; border-radius: 14px;
   background: rgba(0,0,0,.4); border: 1px solid var(--line-strong); color: var(--text);
 }
 .team-search input::placeholder { color: var(--faint); }
@@ -357,6 +354,9 @@ h1, h2, h3, .display { font-family: 'Outfit', 'Sora', sans-serif; }
 .sticker.dup .status { color: #9ad8ff; }
 .sticker.special { box-shadow: inset 0 0 0 2px var(--gold), 0 0 22px rgba(255,212,94,.18); border-color: transparent; }
 .sticker.special .code { color: var(--gold); text-shadow: 0 0 12px rgba(255,212,94,.4); }
+/* silver tier — the shiny shield sticker (#01 of each team) */
+.sticker.special-silver { box-shadow: inset 0 0 0 2px #c9d4e8, 0 0 22px rgba(201,212,232,.16); border-color: transparent; }
+.sticker.special-silver .code { color: #dde6f5; text-shadow: 0 0 12px rgba(201,212,232,.45); }
 
 .dup-badge {
   position: absolute; top: -8px; right: -8px; min-width: 24px; height: 24px; padding: 0 7px;

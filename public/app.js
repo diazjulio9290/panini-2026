@@ -194,9 +194,8 @@ function teamSearchBar() {
   const q = esc(state.teamQuery || '');
   return `
     <div class="team-search">
-      <span class="ts-icon">🔍</span>
       <input id="teamSearch" type="text" autocomplete="off" spellcheck="false"
-             placeholder="Search a team by name or code — e.g. Brazil, BRA, Japan…" value="${q}" />
+             placeholder="🔍 Search a team — e.g. Brazil, BRA, Japan…" value="${q}" />
       <button class="ts-clear ${q ? '' : 'hidden'}" id="teamSearchClear" aria-label="Clear search" title="Clear">✕</button>
     </div>`;
 }
@@ -404,7 +403,7 @@ function stickerTile(stk) {
   if (q === 1) { cls += ' have'; status = 'Have'; statusCls = 'have'; }
   else if (q > 1) { cls += ' dup'; status = 'Duplicate'; statusCls = 'dup'; }
   else { cls += ' need'; }
-  if (stk.special) cls += ' special';
+  if (stk.special) cls += stk.special === 'silver' ? ' special-silver' : ' special';
 
   const dupBadge = q > 1 ? `<span class="dup-badge">x${q}</span>` : '';
 

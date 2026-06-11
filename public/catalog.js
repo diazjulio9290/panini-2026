@@ -124,16 +124,21 @@ function buildSections() {
   });
 
   // 3) 48 national teams, 20 stickers each.
-  //    Per the real printed album: sticker 13 of every team is the TEAM sticker
-  //    (badge/crest slot — gold border); the other 19 are players.
+  //    Per the real printed album:
+  //      01 = shiny SHIELD sticker (silver border)
+  //      13 = TEAM PHOTO sticker (gold border)
+  //      the other 18 are players.
   for (const team of TEAMS) {
     const stickers = Array.from({ length: 20 }, (_, i) => {
       const n = i + 1;
       let type = 'Player';
-      let special = false;
-      if (n === 13) {
-        type = 'Team';
-        special = true; // team sticker gets the gold border
+      let special = false; // false | 'silver' | 'gold'
+      if (n === 1) {
+        type = 'Shield';
+        special = 'silver';
+      } else if (n === 13) {
+        type = 'Team Photo';
+        special = 'gold';
       }
       return { code: team.code + pad2(n), type, special };
     });
